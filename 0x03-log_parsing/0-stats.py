@@ -1,74 +1,88 @@
 #!/usr/bin/python3
-"""
-Log stats module
-"""
-import sys
-from operator import itemgetter
+'''A script for parsing HTTP request logs.
+'''
+import re
 
 
-def log_parser(log):
-    """
-    Parses log into different fields
-    """
-    log_fields = log.split()
-    file_size = int(log_fields[-1])
-    status_code = log_fields[-2]
-    return status_code, file_size
+def extract_input(input_line):
+    '''Extracts sections of a line of an HTTP request log.
+    '''
+    fp = (
+        r'\s*(?P<ip>\S+)\s*',
+        r'\s*\[(?P<date>\d+\-\d+\-\d+ \d+:\d+:\d+\.\d+)\]',
+        r'\s*"(?P<request>[^"]*)"\s*',
+        r'\s*(?P<status_code>\S+)',
+        r'\s*(?P<file_size>\d+)'
+    )
+    info = {
+        'status_code': 0,
+        'file_size': 0,
+    }
+    log_fmt = '{}\\-{}{}{}{}\\s*'.format(fp[0], fp[1], fp[2], fp[3], fp[4])
+    resp_match = re.fullmatch(log_fmt, input_line)
+    if resp_match is not None:
+        status_code = resp_match.group('status_code')
+        file_size = int(resp_match.group('file_size'))
+        info['status_code'] = status_code
+        info['file_size'] = file_size
+    return info
 
 
-def validate_format(log):
-    """
-    Validates log format
-    """
-    return False if len(log.split()) < 7 else True
+def print_statistics(total_file_size, status_codes_stats):
+    '''Prints the accumulated statistics of the HTTP request log.
+    '''
+    print('File size: {:d}'.format(total_file_size), flush=True)
+    for status_code in sorted(status_codes_stats.keys()):
+        num = status_codes_stats.get(status_code, 0)
+        if num > 0:
+            print('{:s}: {:d}'.format(status_code, num), flush=True)
 
 
-def validate_status_code(status_code):
-    """
-    Check if status code entry is valid
-    """
-    valid_status_codes = ["200", "301", "400", "401",
-                          "403", "404", "405", "500"]
-    return True if status_code in valid_status_codes else False
+def update_metrics(line, total_file_size, status_codes_stats):
+    '''Updates the metrics from a given HTTP request log.
+
+    Args:
+        line (str): The line of input from which to retrieve the metrics.
+
+    Returns:
+        int: The new total file size.
+    '''
+    line_info = extract_input(line)
+    status_code = line_info.get('status_code', '0')
+    if status_code in status_codes_stats.keys():
+        status_codes_stats[status_code] += 1
+    return total_file_size + line_info['file_size']
 
 
-def print_log(file_size, status_codes) -> None:
-    """
-    Prints out log files
-    """
-    sorted_status_codes = sorted(status_codes.items(), key=itemgetter(0))
-    print('File size: {}'.format(file_size))
-    for code_count in sorted_status_codes:
-        key = code_count[0]
-        value = code_count[1]
-        print("{}: {}".format(key, value))
-
-
-def main():
-    """
-    Reads logs from std in and prints out statistic
-    on status code and file size
-    """
-    status_codes_count = {}
-    total_size = 0
-    log_count = 0
+def run():
+    '''Starts the log parser.
+    '''
+    line_num = 0
+    total_file_size = 0
+    status_codes_stats = {
+        '200': 0,
+        '301': 0,
+        '400': 0,
+        '401': 0,
+        '403': 0,
+        '404': 0,
+        '405': 0,
+        '500': 0,
+    }
     try:
-        for log in sys.stdin:
-            log_count += 1
-            if not validate_format(log):
-                continue
-            status_code, file_size = log_parser(log)
-            total_size += file_size
-            if validate_status_code(status_code):
-                entry = {status_code:
-                         status_codes_count.get(status_code, 0) + 1}
-                status_codes_count.update(entry)
-            if not log_count % 10:
-                print_log(total_size, status_codes_count)
-    except KeyboardInterrupt:
-        print_log(total_size, status_codes_count)
-    print_log(total_size, status_codes_count)
+        while True:
+            line = input()
+            total_file_size = update_metrics(
+                line,
+                total_file_size,
+                status_codes_stats,
+            )
+            line_num += 1
+            if line_num % 10 == 0:
+                print_statistics(total_file_size, status_codes_stats)
+    except (KeyboardInterrupt, EOFError):
+        print_statistics(total_file_size, status_codes_stats)
 
 
 if __name__ == '__main__':
-    main()
+    run()
