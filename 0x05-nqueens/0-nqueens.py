@@ -1,74 +1,54 @@
 #!/usr/bin/python3
-""" Solving n queens """
-
-
+"""Solving N Queens with Backtracing"""
 import sys
 
 
-# error handling for argv[1]
+def nqueens(n, y, board):
+    """
+    Method: nqueens - place n queens
+            on an n by n board so that
+            no queens are attacking any
+            others.
+    Parameters: n is an int that sets
+                board size and # of queens
+    Return: All possible solutions to
+            placement, in list of lists form
+    """
+    for x in range(n):
+        hold = 0
+        for q in board:
+            if x == q[1]:
+                hold = 1
+                break
+            if y - x == q[0] - q[1]:
+                hold = 1
+                break
+            if x - q[1] == q[0] - y:
+                hold = 1
+                break
+        if hold == 0:
+            board.append([y, x])
+            if y != n - 1:
+                nqueens(n, y + 1, board)
+            else:
+                print(board)
+            del board[-1]
 
-if __name__ == "__main__":
-    if len(sys.argv) == 1 or len(sys.argv) > 2:
+
+def main():
+    if len(sys.argv) != 2:
         print("Usage: nqueens N")
         sys.exit(1)
-    N = sys.argv[1]
     try:
-        N_int = int(N)
-    except ValueError:
-        print("N must be a number")
+        n = int(sys.argv[1])
+    except Exception:
+        print('N must be a number')
         sys.exit(1)
-    if N_int < 4:
+    if n < 4:
         print("N must be at least 4")
         sys.exit(1)
 
-# n queens methods
+    nqueens(n, 0, [])
 
-    coords = []
-
-    def isSafe(coords, row, col):
-        """ Checks if queen can be placed in coord of board.
-        Returns True if can, else False
-        """
-        rows = []
-        cols = []
-        diag_r = []
-        diag_l = []
-
-        for square in coords:
-            rows.append(square[0])
-            cols.append(square[1])
-            diag_r.append(square[0] + square[1])
-            diag_l.append(square[1] - square[0])
-
-        if row in rows or col in cols:
-            return False
-        if row + col in diag_r or col - row in diag_l:
-            return False
-
-        return True
-
-    def solveNqueens(coords, col, safe_queens=[]):
-        """ Creates array of queen positions
-        Returns array
-        """
-        for x in range(N_int):
-            if isSafe(coords, x, col):
-                coords.append([x, col])
-                if col == N_int - 1:
-                    safe_queens.append(coords.copy())
-                    del coords[-1]
-                else:
-                    solveNqueens(coords, col + 1)
-
-        if len(coords):
-            del coords[-1]
-        return safe_queens
-
-# sets base case for recursion
-
-    coords = solveNqueens(coords, 0)
-
-# prints coords of squares for safe queens
-
-    for squares in coords:
-        print(squares)
+if __name__ == '__main__':
+    main()
