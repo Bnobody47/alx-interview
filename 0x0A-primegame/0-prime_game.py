@@ -1,61 +1,44 @@
 #!/usr/bin/python3
-""" Prime Game """
+"""
+Define isWineer function, a solution to the Prime Game problem
+"""
 
 
-def isprime(n):
-    """ Return prime number """
-    for i in range(2, n):
-        if n % i == 0:
-            return False
-    return True
-
-
-def delete_numbers(n, nums):
-    """ Remove numbers - return zero """
-    for i in range(len(nums)):
-        if nums[i] % n == 0:
-            nums[i] = 0
+def primes(n):
+    """Return list of prime numbers between 1 and n inclusive
+       Args:
+        n (int): upper boundary of range. lower boundary is always 1
+    """
+    prime = []
+    sieve = [True] * (n + 1)
+    for p in range(2, n + 1):
+        if (sieve[p]):
+            prime.append(p)
+            for i in range(p, n + 1, p):
+                sieve[i] = False
+    return prime
 
 
 def isWinner(x, nums):
-    """ Return name of player that won
-    most rounds
     """
-    nums.sort()
-    winner = False
-    Maria = 0
-    Ben = 0
-    for game in range(x):
-        # prints("game# ", game+1)
-        nums2 = list(range(1, nums[game] + 1))
-        # print("nums: ", nums2)
-        turn = 0
-        while True:
-            """
-            # monitor turns, uncomment to watch
-            if turn % 2 != 0:
-                print("Ben turn ")
-            else:
-                print("Maria turn ")
-            """
-            change = False
-            for i, n in enumerate(nums2):
-                # print("n: ", n, "i: ", i)
-                if n > 1 and isprime(n):
-                    delete_numbers(n, nums2)
-                    change = True
-                    turn += 1
-                    break
-            # print("movement: ". nums2)
-            if change is False:
-                break
-        if turn % 2 != 0:
-            Maria += 1
-        else:
-            Ben += 1
-        # print("Maria: {}, Ben: {}".format(Maria, Ben))
-    if Maria == Ben:
+    Determines winner of Prime Game
+    Args:
+        x (int): no. of rounds of game
+        nums (int): upper limit of range for each round
+    Return:
+        Name of winner (Maria or Ben) or None if winner cannot be found
+    """
+    if x is None or nums is None or x == 0 or nums == []:
         return None
+    Maria = Ben = 0
+    for i in range(x):
+        prime = primes(nums[i])
+        if len(prime) % 2 == 0:
+            Ben += 1
+        else:
+            Maria += 1
     if Maria > Ben:
-        return "Maria"
-    return "Ben"
+        return 'Maria'
+    elif Ben > Maria:
+        return 'Ben'
+    return None
